@@ -21,11 +21,24 @@ exports.pool = new Pool({
 
 client.login(process.env.TOKEN);
 
-client.on('messageDelete', (deletedMessage) => {
-  console.log(
-    `Message with ID ${deletedMessage.id} deleted in ${deletedMessage.channel}: "${deletedMessage.content}"`,
-  );
-  // You can perform any actions you want here, such as logging, sending a message, etc.
+client.on('messageDelete', async (deletedMessage) => {
+  const logChannel = client.channels.cache.get('1226415610791989329');
+
+  if (!logChannel) {
+    console.log('Logging failed due to an invalid logChannel!');
+    return;
+  }
+
+  if (deletedMessage.channelId === process.env.TARGET_CHANNEL) {
+    const attachmentURLs = Array.from(deletedMessage.attachments.values()).map(
+      (attachment) => attachment.url,
+    );
+    logChannel.send({
+      content: `${deletedMessage.author.username} (userId: ${deletedMessage.author.id}): ${deletedMessage.content}`,
+      files: attachmentURLs,
+    });
+  }
+  console.log(deletedMessage);
 });
 
 client.on('ready', () => {
