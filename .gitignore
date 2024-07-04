@@ -3,3 +3,4 @@ discord-delete-detector.iml
 node_modules
 .env
 .DS_Store
+images
