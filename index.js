@@ -25,6 +25,7 @@ exports.pool = new Pool({
 
 const imageDirectory = './images';
 const validExtensions = ['.png', '.jpg', '.jpeg', '.gif'];
+const maxSizeBytes = 25 * 1024 * 1024; // 25MB
 
 client.login(process.env.TOKEN);
 
@@ -66,17 +67,19 @@ client.on('messageCreate', async (message) => {
     for (const attachment of Array.from(message.attachments.values())) {
       const attachmentURL = attachment.url;
 
+      // Remove any query parameters from the URL
       const fileExtension = path.extname(attachmentURL).split('?')[0].toLowerCase();
 
       if (!validExtensions.includes(fileExtension)) {
-        message.reply(
+        await message.reply(
           'Invalid file format. Please upload an image with a valid extension (.png, .jpg, .jpeg, .gif).',
         );
+        continue;
       }
 
-      const maxSizeBytes = 25 * 1024 * 1024;
       if (attachment.size > maxSizeBytes) {
-        message.reply('Image size exceeds the maximum allowed size of 25MB.');
+        await message.reply('Image size exceeds the maximum allowed size of 25MB.');
+        continue;
       }
 
       if (!fs.existsSync(imageDirectory)) {
@@ -90,8 +93,17 @@ client.on('messageCreate', async (message) => {
         const imageStream = fs.createWriteStream(filePath);
         const response = await axios.get(attachmentURL, { responseType: 'stream' });
         response.data.pipe(imageStream);
+
+        // Wait for the stream to finish
+        await new Promise((resolve, reject) => {
+          imageStream.on('finish', resolve);
+          imageStream.on('error', reject);
+        });
+
+        console.log(`Image uploaded and saved as: ${fileName}`);
       } catch (e) {
-        console.log(e);
+        console.error('Error saving image:', e);
+        await message.reply('There was an error saving your image.');
       }
     }
   }
