@@ -86,9 +86,13 @@ client.on('messageCreate', async (message) => {
       const fileName = `${message.id}${attachment.id}${fileExtension}`;
       const filePath = path.join(__dirname, imageDirectory, fileName);
 
-      const imageStream = fs.createWriteStream(filePath);
-      const response = await axios.get(attachmentURL, { responseType: 'stream' });
-      response.data.pipe(imageStream);
+      try {
+        const imageStream = fs.createWriteStream(filePath);
+        const response = await axios.get(attachmentURL, { responseType: 'stream' });
+        response.data.pipe(imageStream);
+      } catch (e) {
+        console.log(e);
+      }
     }
   }
 });
